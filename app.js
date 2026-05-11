@@ -35,123 +35,106 @@ function App() {
     "ovh"
   ];
 
-Zhengzhou Century Connect Electronic Technology Development Co., Ltd
-nicenic.net (ZhuHai NaiSiNiKe Informationstechnologie)
-Miracle Ventures Ltd
-Miracle Ventures Ltd [Tag = MIRACLEDOMAINS]
-Longming Pte. Ltd.
-郑州世纪创联电子科技开发有限公司
-万商云集（成都）科技股份有限公司
-Autónomos (Einzelunternehmer)
-Kostiantyn Malinovskyi t/a 301domains [Tag = DOM301]
-NameMart Pte. Ltd.
-FE-SU
-ALMIC OÜ
-URL-Lösungen
-FE-RU
-Ultahost, Inc.
-KENPAI
-Ultahost, Inc
-Netze zu limitierten Netzen
-NIC. UA LLC (nic-mnt-cunic)
-域见未来（北京）科技有限公司
-Kenpai International Technology Limited
-WebNic.cc (Web-Commerce-Kommunikation)
-北京新网数码信息技术有限公司
-Atak Domain Hosting
-甘肃云创空间网络科技有限公司
-Namemart Limited
-Immaterialismus Begrenzt
-EU Technology (HK) Limited
-天津追日科技发展有限公司
-Devexpanse / Regery
-Netcom.cm Sarl
-Guizhou Zhongyu Zhike Network Technology Co., Ltd.
-NameSilo
-Laxweb Technologies Pvt. Ltd.
-NICENIC INTERNATIONAL GROUP CO., LTD
-云南互道云网络科技有限公司
-IMMATERIALISM LIMITED
-Ardis
-Domain International Services Limited
-sudu.cn
-Sollutium EU sp. z o.o.
-成都垦派科技有限公司
-SELECTEL-RU
-厦门纳网科技股份有限公司
-Vantage of Convergence (Chengdu) Technology Co., Ltd.
-MainReg Inc.
-厦门市中资源网络服务有限公司
-Global Domain Group LLC
-海南美洁达科技有限公司
-四川域趣网络科技有限公司
-west263.com
-斗麦（上海）网络科技有限公司
-北京网尊科技有限公司
-nawang.cn
-Dynadot
-Sav.com
-合肥聚名网络科技有限公司
-Cosmotown
-RegRU
-Pan-Asia Information Technology Jiangsu Co., Ltd.
-北京国科云计算技术有限公司（原北京中科三方网络技术有限公司）
-NIC Handle : adh83
-OwnRegistrar / Trunkoz
-厦门三五互联信息有限公司
-NAMEMART PTE. LTD.
-海口智慧康网络科技有限公司
-广东金万邦科技投资有限公司
-Evoluci?n Per? SRL.
-Dominet (HK) Limited
-厦门易名科技股份有限公司
-包头市特木鲁网络科技有限公司
-武汉物与伦比科技有限公司
-长春市智绘网络科技有限公司
-PT Registrasi Neva Angkasa
-Cloud Yuqu LLC
-Fewmoretaps OU d/b/a Trustname.com
-Dnsgulf Pte. Ltd.
-长沙小豆网络科技有限公司
-Hello Internet Corp
-成都飞数科技有限公司
-商中在线科技股份有限公司
-Mat Bao Corporation
-Gransy d.o.o.
-Hosting concepts B.V. / Registrar.eu ( https://nic.at/registrar/648 )
-Name.com
-Hefei Juming Network Technology Co., Ltd
-TuringSign Inc. d/b/a Cosmotown
-NauNet
-Cosmotown Inc
-Turingsign Inc.
-Shinjiru
-云南蓝队云计算有限公司
-eName Technology
-上海福虎信息科技有限公司
-邦宁数字技术股份有限公司
-北京国旭网络科技有限公司
-阿里云计算有限公司（万网）
-Domainipr Limited
-Namecheap
-
   const spamhausRiskProviders = [
-    "cloudflare",
-    "amazon",
-    "google",
-    "microsoft",
-    "ovh",
-    "hostinger",
-    "namecheap",
-    "contabo",
-    "m247",
-    "reg.ru",
-    "timeweb",
-    "selectel",
-    "alexhost",
-    "pq hosting",
-    "ultahost",
-    "spaceship"
+    "Zhengzhou Century Connect Electronic Technology Development Co., Ltd",
+    "nicenic.net",
+    "ZhuHai NaiSiNiKe",
+    "Miracle Ventures Ltd",
+    "Longming Pte. Ltd.",
+    "郑州世纪创联电子科技开发有限公司",
+    "万商云集",
+    "Autónomos",
+    "301domains",
+    "NameMart Pte. Ltd.",
+    "FE-SU",
+    "ALMIC",
+    "URL-Lösungen",
+    "FE-RU",
+    "Ultahost",
+    "KENPAI",
+    "NIC. UA LLC",
+    "域见未来",
+    "Kenpai International",
+    "WebNic",
+    "北京新网",
+    "Atak Domain",
+    "甘肃云创空间",
+    "Namemart",
+    "Immaterialismus",
+    "EU Technology",
+    "天津追日",
+    "Devexpanse",
+    "Regery",
+    "Netcom.cm",
+    "Guizhou Zhongyu",
+    "NameSilo",
+    "Laxweb",
+    "NICENIC INTERNATIONAL",
+    "云南互道云",
+    "IMMATERIALISM",
+    "Ardis",
+    "Domain International Services",
+    "sudu.cn",
+    "Sollutium",
+    "成都垦派",
+    "SELECTEL",
+    "厦门纳网",
+    "Vantage of Convergence",
+    "MainReg",
+    "厦门市中资源",
+    "Global Domain Group",
+    "海南美洁达",
+    "四川域趣",
+    "west263.com",
+    "斗麦",
+    "北京网尊",
+    "nawang.cn",
+    "Dynadot",
+    "Sav.com",
+    "合肥聚名",
+    "Cosmotown",
+    "RegRU",
+    "REG.RU",
+    "Pan-Asia Information",
+    "北京国科云",
+    "OwnRegistrar",
+    "Trunkoz",
+    "厦门三五互联",
+    "NAMEMART",
+    "海口智慧康",
+    "广东金万邦",
+    "Evolución Perú",
+    "Dominet",
+    "厦门易名",
+    "包头市特木鲁",
+    "武汉物与伦比",
+    "长春市智绘",
+    "PT Registrasi Neva Angkasa",
+    "Cloud Yuqu",
+    "Fewmoretaps",
+    "Trustname",
+    "Dnsgulf",
+    "长沙小豆",
+    "Hello Internet",
+    "成都飞数",
+    "商中在线",
+    "Mat Bao",
+    "Gransy",
+    "Registrar.eu",
+    "Name.com",
+    "Hefei Juming",
+    "TuringSign",
+    "NauNet",
+    "Turingsign",
+    "Shinjiru",
+    "云南蓝队云",
+    "eName",
+    "上海福虎",
+    "邦宁数字",
+    "北京国旭",
+    "阿里云",
+    "Domainipr",
+    "Namecheap"
   ];
 
   function cleanDomain(value) {
