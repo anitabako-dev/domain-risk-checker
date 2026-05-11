@@ -5,11 +5,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const riskyRegistrars = [
-    "ultahost",
-    "namecheap",
-    "spaceship"
-  ];
+  const riskyRegistrars = ["ultahost", "namecheap", "spaceship"];
 
   const riskyNameservers = [
     "ultahost",
@@ -48,18 +44,13 @@ function App() {
     "pq hosting"
   ];
 
-  // Eigene Abuse-/Blacklist-IP-Liste
-  const riskyIps = [
-    "91.195.240.123"
-  ];
-
-  // Eigene riskante IP-Bereiche
-  const riskyIpRanges = [
-    "91.195.240."
-  ];
+  const riskyIps = ["91.195.240.123"];
+  const riskyIpRanges = ["91.195.240."];
 
   function cleanDomain(value) {
-    return value.toLowerCase().trim()
+    return value
+      .toLowerCase()
+      .trim()
       .replace("https://", "")
       .replace("http://", "")
       .replace("www.", "")
@@ -73,20 +64,13 @@ function App() {
   function getEventDate(events, action) {
     if (!events) return null;
     const event = events.find(e => e.eventAction === action);
-
-    if (!event || !event.eventDate) return null;
-
-    return new Date(event.eventDate);
+    return event?.eventDate ? new Date(event.eventDate) : null;
   }
 
   function containsFromList(text, list) {
     if (!text) return false;
-
     const lower = text.toLowerCase();
-
-    return list.some(item =>
-      lower.includes(item.toLowerCase())
-    );
+    return list.some(item => lower.includes(item.toLowerCase()));
   }
 
   function getRegistrar(rdap) {
@@ -96,22 +80,38 @@ function App() {
       e => e.roles && e.roles.includes("registrar")
     );
 
-    if (!regEntity || !regEntity.vcardArray)
-      return "nicht gefunden";
+    if (!regEntity?.vcardArray) return "nicht gefunden";
 
-    const fn = regEntity.vcardArray[1].find(
-      v => v[0] === "fn"
-    );
-
+    const fn = regEntity.vcardArray[1].find(v => v[0] === "fn");
     return fn ? fn[3] : "nicht gefunden";
   }
 
   function getNameservers(rdap) {
     if (!rdap.nameservers) return [];
-
     return rdap.nameservers
       .map(n => n.ldhName || n.unicodeName || "")
       .filter(Boolean);
+  }
+
+  function isValidPublicIp(ip) {
+    if (!ip) return false;
+
+    const parts = ip.split(".").map(Number);
+    if (parts.length !== 4 || parts.some(n => isNaN(n) || n < 0 || n > 255)) {
+      return false;
+    }
+
+    const [a, b] = parts;
+
+    if (a === 127) return false;
+    if (a === 10) return false;
+    if (a === 0) return false;
+    if (a === 192 && b === 168) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 169 && b === 254) return false;
+    if (a >= 224) return false;
+
+    return true;
   }
 
   async function analyzeDomain() {
@@ -123,7 +123,8 @@ function App() {
     let registrar = "nicht gefunden";
     let createdText = "nicht gefunden";
     let ageDays = null;
-    let ip = "nicht gefunden";
+    let ip = null;
+    let ipText = "keine öffentliche IP ermittelbar";
     let hosting = "nicht gefunden";
     let nameservers = [];
 
@@ -134,7 +135,13 @@ function App() {
         domain,
         score: 0,
         status: "Ungültig",
-        findings: ["Bitte gültige Domain eingeben."]
+        findings: ["Bitte gültige Domain eingeben."],
+        registrar,
+        createdText,
+        ageDays,
+        ipText,
+        hosting,
+        nameservers
       });
 
       setLoading(false);
@@ -154,10 +161,7 @@ function App() {
 
     if (freeMail.includes(domain)) {
       score -= 45;
-
-      findings.push(
-        "Kostenlose Maildomain – kritisch für Firmenkommunikation."
-      );
+      findings.push("Kostenlose Maildomain – kritisch für Firmenkommunikation.");
     }
 
     if (
@@ -166,355 +170,225 @@ function App() {
       domain.includes("recruit")
     ) {
       score -= 15;
-
-      findings.push(
-        "Recruiting-Begriffe in der Domain."
-      );
+      findings.push("Recruiting-Begriffe in der Domain.");
     }
 
     if ((domain.match(/-/g) || []).length >= 2) {
       score -= 10;
-
-      findings.push(
-        "Viele Bindestriche in der Domain."
-      );
+      findings.push("Viele Bindestriche in der Domain.");
     }
 
     if (/\d/.test(domain)) {
       score -= 8;
-
-      findings.push(
-        "Zahlen in der Domain."
-      );
+      findings.push("Zahlen in der Domain.");
     }
 
-    // RDAP / WHOIS
     try {
-      const rdapRes = await fetch(
-        "https://rdap.org/domain/" + domain
-      );
+      const rdapRes = await fetch("https://rdap.org/domain/" + domain);
+
+      if (!rdapRes.ok) {
+        throw new Error("RDAP fehlgeschlagen");
+      }
 
       const rdap = await rdapRes.json();
 
-      const created = getEventDate(
-        rdap.events,
-        "registration"
-      );
+      const created = getEventDate(rdap.events, "registration");
 
       if (created && !isNaN(created)) {
         createdText = created.toLocaleDateString("de-DE");
 
         ageDays = Math.floor(
-          (new Date() - created) /
-          (1000 * 60 * 60 * 24)
+          (new Date() - created) / (1000 * 60 * 60 * 24)
         );
 
         if (ageDays < 30) {
           score -= 70;
-
           findings.push(
-            "HOCHRISIKANT: Domain jünger als 30 Tage (" +
-            ageDays +
-            " Tage)."
+            "HOCHRISIKANT: Domain jünger als 30 Tage (" + ageDays + " Tage)."
           );
         } else if (ageDays < 180) {
           score -= 35;
-
           findings.push(
-            "Riskant: Domain jünger als 6 Monate (" +
-            ageDays +
-            " Tage)."
+            "Riskant: Domain jünger als 6 Monate (" + ageDays + " Tage)."
           );
         } else if (ageDays < 365) {
           score -= 20;
-
           findings.push(
-            "Auffällig: Domain jünger als 1 Jahr (" +
-            ageDays +
-            " Tage)."
+            "Auffällig: Domain jünger als 1 Jahr (" + ageDays + " Tage)."
           );
         } else {
-          findings.push(
-            "Domainalter unauffällig: " +
-            ageDays +
-            " Tage."
-          );
+          findings.push("Domainalter unauffällig: " + ageDays + " Tage.");
         }
       } else {
         score -= 25;
-
-        findings.push(
-          "Kein verlässliches Registrierungsdatum gefunden."
-        );
+        findings.push("Kein verlässliches Registrierungsdatum gefunden.");
       }
 
       registrar = getRegistrar(rdap);
-
       nameservers = getNameservers(rdap);
 
       if (registrar === "nicht gefunden") {
-        score -= 8;
-
-        findings.push(
-          "Registrar nicht öffentlich sichtbar."
-        );
+        score -= 15;
+        findings.push("Registrar nicht öffentlich sichtbar.");
       } else {
-        findings.push(
-          "Registrar: " + registrar
-        );
+        findings.push("Registrar: " + registrar);
 
-        if (
-          containsFromList(
-            registrar,
-            riskyRegistrars
-          )
-        ) {
+        if (containsFromList(registrar, riskyRegistrars)) {
           score -= 25;
-
-          findings.push(
-            "Registrar steht auf interner Risikoliste."
-          );
+          findings.push("Registrar steht auf interner Risikoliste.");
         }
 
-        if (
-          containsFromList(
-            registrar,
-            spamhausRiskProviders
-          )
-        ) {
+        if (containsFromList(registrar, spamhausRiskProviders)) {
           score -= 20;
-
-          findings.push(
-            "Registrar/Provider steht auf Spamhaus-Risikoliste."
-          );
+          findings.push("Registrar/Provider steht auf Spamhaus-Risikoliste.");
         }
       }
 
       if (nameservers.length > 0) {
-        findings.push(
-          "Nameserver: " +
-          nameservers.join(", ")
-        );
+        findings.push("Nameserver: " + nameservers.join(", "));
 
         const nsText = nameservers.join(" ");
 
-        if (
-          containsFromList(
-            nsText,
-            riskyNameservers
-          )
-        ) {
+        if (containsFromList(nsText, riskyNameservers)) {
           score -= 25;
-
-          findings.push(
-            "Auffällige Nameserver erkannt."
-          );
+          findings.push("Auffällige Nameserver erkannt.");
         }
 
-        if (
-          containsFromList(
-            nsText,
-            spamhausRiskProviders
-          )
-        ) {
+        if (containsFromList(nsText, spamhausRiskProviders)) {
           score -= 20;
-
-          findings.push(
-            "Nameserver/Provider steht auf Spamhaus-Risikoliste."
-          );
+          findings.push("Nameserver/Provider steht auf Spamhaus-Risikoliste.");
         }
       } else {
-        score -= 15;
-
-        findings.push(
-          "Keine Nameserver gefunden."
-        );
+        score -= 25;
+        findings.push("Keine Nameserver gefunden.");
       }
-
     } catch (e) {
-      score -= 30;
-
-      findings.push(
-        "RDAP/WHOIS-Daten konnten nicht geprüft werden."
-      );
+      score -= 35;
+      findings.push("RDAP/WHOIS-Daten konnten nicht geprüft werden.");
     }
 
-    // DNS / IP / Hosting
     try {
       const dnsRes = await fetch(
-        "https://dns.google/resolve?name=" +
-        domain +
-        "&type=A"
+        "https://dns.google/resolve?name=" + domain + "&type=A"
       );
 
       const dns = await dnsRes.json();
 
-      if (dns.Answer && dns.Answer.length > 0) {
-        const record = dns.Answer.find(
-          a => a.type === 1
-        );
+      const record = dns.Answer?.find(a => a.type === 1);
 
-        if (record) {
-          ip = record.data;
+      if (record?.data && isValidPublicIp(record.data)) {
+        ip = record.data;
+        ipText = ip;
 
-          findings.push(
-            "IP-Adresse: " + ip
-          );
+        findings.push("IP-Adresse: " + ip);
+        findings.push("AbuseIPDB prüfen: https://www.abuseipdb.com/check/" + ip);
 
-          // AbuseIPDB Link
-          findings.push(
-            "AbuseIPDB prüfen: https://www.abuseipdb.com/check/" + ip
-          );
+        if (riskyIps.includes(ip)) {
+          score -= 60;
+          findings.push("KRITISCH: IP-Adresse steht auf interner Abuse-/Blacklist.");
+        }
 
-          // Eigene IP Blacklist
-          if (riskyIps.includes(ip)) {
-            score -= 60;
+        if (riskyIpRanges.some(range => ip.startsWith(range))) {
+          score -= 40;
+          findings.push("KRITISCH: IP-Bereich steht auf interner Abuse-/Blacklist.");
+        }
 
-            findings.push(
-              "KRITISCH: IP-Adresse steht auf interner Abuse-/Blacklist."
-            );
-          }
+        try {
+          const ipRes = await fetch("https://rdap.org/ip/" + ip);
 
-          // Eigene IP-Ranges
-          if (
-            riskyIpRanges.some(range =>
-              ip.startsWith(range)
-            )
-          ) {
-            score -= 40;
+          if (ipRes.ok) {
+            const ipData = await ipRes.json();
 
-            findings.push(
-              "KRITISCH: IP-Bereich steht auf interner Abuse-/Blacklist."
-            );
-          }
-
-          const ipRes = await fetch(
-            "https://rdap.org/ip/" + ip
-          );
-
-          const ipData = await ipRes.json();
-
-          if (ipData.name) {
-            hosting = ipData.name;
-          }
-
-          if (
-            ipData.entities &&
-            ipData.entities.length > 0
-          ) {
-            const org =
-              ipData.entities[0]
-                .vcardArray?.[1]
-                ?.find(v => v[0] === "fn");
-
-            if (org) {
-              hosting = org[3];
+            if (ipData.name) {
+              hosting = ipData.name;
             }
+
+            if (ipData.entities?.length > 0) {
+              const org = ipData.entities[0].vcardArray?.[1]?.find(
+                v => v[0] === "fn"
+              );
+
+              if (org) {
+                hosting = org[3];
+              }
+            }
+
+            findings.push("Hosting/Netzwerk: " + hosting);
+
+            if (containsFromList(hosting, riskyHosting)) {
+              score -= 25;
+              findings.push("Hosting/Netzwerk steht auf interner Risikoliste.");
+            }
+
+            if (containsFromList(hosting, spamhausRiskProviders)) {
+              score -= 25;
+              findings.push("Hosting/Netzwerk steht auf Spamhaus-Risikoliste.");
+            }
+          } else {
+            score -= 10;
+            findings.push("Hosting/Netzwerk konnte nicht eindeutig geprüft werden.");
           }
-
-          findings.push(
-            "Hosting/Netzwerk: " + hosting
-          );
-
-          if (
-            containsFromList(
-              hosting,
-              riskyHosting
-            )
-          ) {
-            score -= 25;
-
-            findings.push(
-              "Hosting/Netzwerk steht auf interner Risikoliste."
-            );
-          }
-
-          if (
-            containsFromList(
-              hosting,
-              spamhausRiskProviders
-            )
-          ) {
-            score -= 25;
-
-            findings.push(
-              "Hosting/Netzwerk steht auf Spamhaus-Risikoliste."
-            );
-          }
+        } catch (e) {
+          score -= 10;
+          findings.push("Hosting/Netzwerk konnte nicht geprüft werden.");
         }
       } else {
-        score -= 10;
+        score -= 35;
 
-        findings.push(
-          "Keine A-Record-IP gefunden."
-        );
+        if (record?.data) {
+          findings.push(
+            "Keine gültige öffentliche IP ermittelbar. Gefundene interne/ungültige IP wurde nicht angezeigt."
+          );
+        } else {
+          findings.push("Keine A-Record-IP gefunden.");
+        }
       }
-
     } catch (e) {
-      score -= 10;
+      score -= 35;
+      findings.push("DNS/IP/Hosting konnte nicht geprüft werden.");
+    }
 
+    if (ageDays !== null && ageDays < 30) {
+      score = Math.min(score, 30);
+    }
+
+    if (ip && (riskyIps.includes(ip) || riskyIpRanges.some(range => ip.startsWith(range)))) {
+      score = Math.min(score, 30);
+    }
+
+    if (!ip) {
+      score = Math.min(score, 65);
+    }
+
+    if (
+      registrar === "nicht gefunden" &&
+      nameservers.length === 0 &&
+      !ip
+    ) {
+      score = Math.min(score, 35);
       findings.push(
-        "IP/Hosting konnte nicht geprüft werden."
+        "KRITISCH: Keine WHOIS-/Registrar-Daten, keine Nameserver und keine öffentliche IP gefunden."
       );
-    }
-
-    // Zusatzlogik
-    if (
-      ageDays !== null &&
-      ageDays < 30
-    ) {
-      score = Math.min(score, 30);
-    }
-
-    if (
-      riskyIps.includes(ip) ||
-      riskyIpRanges.some(range =>
-        ip.startsWith(range)
-      )
-    ) {
-      score = Math.min(score, 30);
     }
 
     if (
       ageDays !== null &&
       ageDays < 180 &&
       (
+        containsFromList(registrar, riskyRegistrars) ||
+        containsFromList(nameservers.join(" "), riskyNameservers) ||
+        containsFromList(hosting, riskyHosting) ||
         containsFromList(
-          registrar,
-          riskyRegistrars
-        ) ||
-
-        containsFromList(
-          nameservers.join(" "),
-          riskyNameservers
-        ) ||
-
-        containsFromList(
-          hosting,
-          riskyHosting
-        ) ||
-
-        containsFromList(
-          registrar +
-          " " +
-          nameservers.join(" ") +
-          " " +
-          hosting,
+          registrar + " " + nameservers.join(" ") + " " + hosting,
           spamhausRiskProviders
         )
       )
     ) {
       score = Math.min(score, 40);
-
-      findings.push(
-        "Kombination aus junger Domain und auffälliger Infrastruktur."
-      );
+      findings.push("Kombination aus junger Domain und auffälliger Infrastruktur.");
     }
 
-    score = Math.max(
-      0,
-      Math.min(100, score)
-    );
+    score = Math.max(0, Math.min(100, score));
 
     let status = "Gut";
 
@@ -532,6 +406,7 @@ function App() {
       createdText,
       ageDays,
       ip,
+      ipText,
       hosting,
       nameservers,
       findings
@@ -549,8 +424,7 @@ function App() {
         </h1>
 
         <p className="text-slate-600 mb-6">
-          Prüft Domainalter, Registrar,
-          Nameserver, IP, Hosting und Abuse-Risiken.
+          Prüft Domainalter, Registrar, Nameserver, IP, Hosting und Abuse-Risiken.
         </p>
 
         <div className="flex gap-3">
@@ -558,9 +432,7 @@ function App() {
             type="text"
             placeholder="firma.com oder mail@firma.com"
             value={input}
-            onChange={(e) =>
-              setInput(e.target.value)
-            }
+            onChange={(e) => setInput(e.target.value)}
             className="flex-1 border rounded-xl px-4 py-3"
           />
 
@@ -611,7 +483,7 @@ function App() {
               </div>
 
               <div>
-                <b>IP:</b> {result.ip}
+                <b>IP:</b> {result.ipText}
               </div>
 
               <div>
@@ -632,8 +504,7 @@ function App() {
             </div>
 
             <div className="mt-4 text-sm text-slate-500">
-              Hinweis: Diese Bewertung ist nur ein Risikosignal
-              und kein Beweis.
+              Hinweis: Diese Bewertung ist nur ein Risikosignal und kein Beweis.
             </div>
 
           </div>
