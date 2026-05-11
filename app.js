@@ -6,8 +6,152 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const riskyRegistrars = [
-    "ultahost"
-    // hier später ergänzen: "namecheap", "hostinger", ...
+    "ultahost",
+    "namecheap",
+    "spaceship"
+  ];
+
+  const riskyNameservers = [
+    "ultahost",
+    "spaceship",
+    "dns-parking",
+    "parking",
+    "sedoparking",
+    "bodis",
+    "parklogic"
+  ];
+
+  const riskyHosting = [
+    "ultahost",
+    "pq hosting",
+    "alexhost",
+    "flokinet",
+    "m247",
+    "reg.ru",
+    "timeweb",
+    "selectel",
+    "hostinger",
+    "contabo",
+    "ovh"
+  ];
+
+Zhengzhou Century Connect Electronic Technology Development Co., Ltd
+nicenic.net (ZhuHai NaiSiNiKe Informationstechnologie)
+Miracle Ventures Ltd
+Miracle Ventures Ltd [Tag = MIRACLEDOMAINS]
+Longming Pte. Ltd.
+郑州世纪创联电子科技开发有限公司
+万商云集（成都）科技股份有限公司
+Autónomos (Einzelunternehmer)
+Kostiantyn Malinovskyi t/a 301domains [Tag = DOM301]
+NameMart Pte. Ltd.
+FE-SU
+ALMIC OÜ
+URL-Lösungen
+FE-RU
+Ultahost, Inc.
+KENPAI
+Ultahost, Inc
+Netze zu limitierten Netzen
+NIC. UA LLC (nic-mnt-cunic)
+域见未来（北京）科技有限公司
+Kenpai International Technology Limited
+WebNic.cc (Web-Commerce-Kommunikation)
+北京新网数码信息技术有限公司
+Atak Domain Hosting
+甘肃云创空间网络科技有限公司
+Namemart Limited
+Immaterialismus Begrenzt
+EU Technology (HK) Limited
+天津追日科技发展有限公司
+Devexpanse / Regery
+Netcom.cm Sarl
+Guizhou Zhongyu Zhike Network Technology Co., Ltd.
+NameSilo
+Laxweb Technologies Pvt. Ltd.
+NICENIC INTERNATIONAL GROUP CO., LTD
+云南互道云网络科技有限公司
+IMMATERIALISM LIMITED
+Ardis
+Domain International Services Limited
+sudu.cn
+Sollutium EU sp. z o.o.
+成都垦派科技有限公司
+SELECTEL-RU
+厦门纳网科技股份有限公司
+Vantage of Convergence (Chengdu) Technology Co., Ltd.
+MainReg Inc.
+厦门市中资源网络服务有限公司
+Global Domain Group LLC
+海南美洁达科技有限公司
+四川域趣网络科技有限公司
+west263.com
+斗麦（上海）网络科技有限公司
+北京网尊科技有限公司
+nawang.cn
+Dynadot
+Sav.com
+合肥聚名网络科技有限公司
+Cosmotown
+RegRU
+Pan-Asia Information Technology Jiangsu Co., Ltd.
+北京国科云计算技术有限公司（原北京中科三方网络技术有限公司）
+NIC Handle : adh83
+OwnRegistrar / Trunkoz
+厦门三五互联信息有限公司
+NAMEMART PTE. LTD.
+海口智慧康网络科技有限公司
+广东金万邦科技投资有限公司
+Evoluci?n Per? SRL.
+Dominet (HK) Limited
+厦门易名科技股份有限公司
+包头市特木鲁网络科技有限公司
+武汉物与伦比科技有限公司
+长春市智绘网络科技有限公司
+PT Registrasi Neva Angkasa
+Cloud Yuqu LLC
+Fewmoretaps OU d/b/a Trustname.com
+Dnsgulf Pte. Ltd.
+长沙小豆网络科技有限公司
+Hello Internet Corp
+成都飞数科技有限公司
+商中在线科技股份有限公司
+Mat Bao Corporation
+Gransy d.o.o.
+Hosting concepts B.V. / Registrar.eu ( https://nic.at/registrar/648 )
+Name.com
+Hefei Juming Network Technology Co., Ltd
+TuringSign Inc. d/b/a Cosmotown
+NauNet
+Cosmotown Inc
+Turingsign Inc.
+Shinjiru
+云南蓝队云计算有限公司
+eName Technology
+上海福虎信息科技有限公司
+邦宁数字技术股份有限公司
+北京国旭网络科技有限公司
+阿里云计算有限公司（万网）
+Domainipr Limited
+Namecheap
+
+  const spamhausRiskProviders = [
+    "cloudflare",
+    "amazon",
+    "google",
+    "microsoft",
+    "ovh",
+    "hostinger",
+    "namecheap",
+    "contabo",
+    "m247",
+    "reg.ru",
+    "timeweb",
+    "selectel",
+    "alexhost",
+    "pq hosting",
+    "ultahost",
+    "spaceship"
   ];
 
   function cleanDomain(value) {
@@ -29,21 +173,81 @@ function App() {
     return new Date(event.eventDate);
   }
 
+  function containsFromList(text, list) {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return list.some(item => lower.includes(item.toLowerCase()));
+  }
+
+  function getRegistrar(rdap) {
+    if (!rdap.entities) return "nicht gefunden";
+    const regEntity = rdap.entities.find(e => e.roles && e.roles.includes("registrar"));
+    if (!regEntity || !regEntity.vcardArray) return "nicht gefunden";
+    const fn = regEntity.vcardArray[1].find(v => v[0] === "fn");
+    return fn ? fn[3] : "nicht gefunden";
+  }
+
+  function getNameservers(rdap) {
+    if (!rdap.nameservers) return [];
+    return rdap.nameservers
+      .map(n => n.ldhName || n.unicodeName || "")
+      .filter(Boolean);
+  }
+
   async function analyzeDomain() {
     const domain = cleanDomain(input);
     let score = 100;
     let findings = [];
+
     let registrar = "nicht gefunden";
     let createdText = "nicht gefunden";
+    let ageDays = null;
     let ip = "nicht gefunden";
     let hosting = "nicht gefunden";
+    let nameservers = [];
 
     setLoading(true);
 
     if (!domain || !domain.includes(".")) {
-      setResult({ domain, score: 0, status: "Ungültig", findings: ["Bitte gültige Domain eingeben."] });
+      setResult({
+        domain,
+        score: 0,
+        status: "Ungültig",
+        findings: ["Bitte gültige Domain eingeben."]
+      });
       setLoading(false);
       return;
+    }
+
+    const freeMail = [
+      "gmail.com",
+      "outlook.com",
+      "hotmail.com",
+      "yahoo.com",
+      "icloud.com",
+      "gmx.at",
+      "gmx.de",
+      "web.de"
+    ];
+
+    if (freeMail.includes(domain)) {
+      score -= 45;
+      findings.push("Kostenlose Maildomain – für Firmenkommunikation kritisch.");
+    }
+
+    if (domain.includes("career") || domain.includes("job") || domain.includes("recruit")) {
+      score -= 15;
+      findings.push("Recruiting-Begriffe in der Domain.");
+    }
+
+    if ((domain.match(/-/g) || []).length >= 2) {
+      score -= 10;
+      findings.push("Viele Bindestriche in der Domain.");
+    }
+
+    if (/\d/.test(domain)) {
+      score -= 8;
+      findings.push("Zahlen in der Domain.");
     }
 
     try {
@@ -51,9 +255,10 @@ function App() {
       const rdap = await rdapRes.json();
 
       const created = getEventDate(rdap.events, "registration");
-      if (created) {
+
+      if (created && !isNaN(created)) {
         createdText = created.toLocaleDateString("de-DE");
-        const ageDays = Math.floor((new Date() - created) / (1000 * 60 * 60 * 24));
+        ageDays = Math.floor((new Date() - created) / (1000 * 60 * 60 * 24));
 
         if (ageDays < 30) {
           score -= 70;
@@ -67,26 +272,53 @@ function App() {
         } else {
           findings.push("Domainalter unauffällig: " + ageDays + " Tage.");
         }
+      } else {
+        score -= 25;
+        findings.push("Kein verlässliches Registrierungsdatum gefunden.");
       }
 
-      if (rdap.entities && rdap.entities.length > 0) {
-        const regEntity = rdap.entities.find(e => e.roles && e.roles.includes("registrar"));
-        if (regEntity && regEntity.vcardArray) {
-          const fn = regEntity.vcardArray[1].find(v => v[0] === "fn");
-          if (fn) registrar = fn[3];
-        }
-      }
+      registrar = getRegistrar(rdap);
+      nameservers = getNameservers(rdap);
 
-      if (registrar !== "nicht gefunden") {
+      if (registrar === "nicht gefunden") {
+        score -= 8;
+        findings.push("Registrar nicht öffentlich sichtbar oder nicht ermittelbar.");
+      } else {
         findings.push("Registrar: " + registrar);
 
-        if (riskyRegistrars.some(r => registrar.toLowerCase().includes(r))) {
-          score -= 35;
-          findings.push("Riskanter Registrar laut interner Liste.");
+        if (containsFromList(registrar, riskyRegistrars)) {
+          score -= 25;
+          findings.push("Registrar steht auf interner Risikoliste.");
+        }
+
+        if (containsFromList(registrar, spamhausRiskProviders)) {
+          score -= 20;
+          findings.push("Registrar/Provider steht auf Spamhaus-Risikoliste.");
         }
       }
+
+      if (nameservers.length > 0) {
+        findings.push("Nameserver: " + nameservers.join(", "));
+
+        const nsText = nameservers.join(" ");
+
+        if (containsFromList(nsText, riskyNameservers)) {
+          score -= 25;
+          findings.push("Auffällige Nameserver erkannt.");
+        }
+
+        if (containsFromList(nsText, spamhausRiskProviders)) {
+          score -= 20;
+          findings.push("Nameserver/Provider steht auf Spamhaus-Risikoliste.");
+        }
+      } else {
+        score -= 15;
+        findings.push("Keine Nameserver gefunden.");
+      }
+
     } catch (e) {
-      findings.push("Domainalter/Registrar konnte nicht geprüft werden.");
+      score -= 30;
+      findings.push("RDAP/WHOIS-Daten konnten nicht geprüft werden.");
     }
 
     try {
@@ -94,25 +326,60 @@ function App() {
       const dns = await dnsRes.json();
 
       if (dns.Answer && dns.Answer.length > 0) {
-        ip = dns.Answer.find(a => a.type === 1)?.data || "nicht gefunden";
-        findings.push("IP-Adresse: " + ip);
+        const record = dns.Answer.find(a => a.type === 1);
+        if (record) {
+          ip = record.data;
+          findings.push("IP-Adresse: " + ip);
 
-        const ipRes = await fetch("https://rdap.org/ip/" + ip);
-        const ipData = await ipRes.json();
+          const ipRes = await fetch("https://rdap.org/ip/" + ip);
+          const ipData = await ipRes.json();
 
-        if (ipData.name) hosting = ipData.name;
-        if (ipData.entities && ipData.entities.length > 0) {
-          const org = ipData.entities[0].vcardArray?.[1]?.find(v => v[0] === "fn");
-          if (org) hosting = org[3];
+          if (ipData.name) {
+            hosting = ipData.name;
+          }
+
+          if (ipData.entities && ipData.entities.length > 0) {
+            const org = ipData.entities[0].vcardArray?.[1]?.find(v => v[0] === "fn");
+            if (org) hosting = org[3];
+          }
+
+          findings.push("Hosting/Netzwerk: " + hosting);
+
+          if (containsFromList(hosting, riskyHosting)) {
+            score -= 25;
+            findings.push("Hosting/Netzwerk steht auf interner Risikoliste.");
+          }
+
+          if (containsFromList(hosting, spamhausRiskProviders)) {
+            score -= 25;
+            findings.push("Hosting/Netzwerk steht auf Spamhaus-Risikoliste.");
+          }
         }
-
-        findings.push("Hosting/Netzwerk: " + hosting);
       } else {
         score -= 10;
         findings.push("Keine A-Record-IP gefunden.");
       }
     } catch (e) {
+      score -= 10;
       findings.push("IP/Hosting konnte nicht geprüft werden.");
+    }
+
+    if (ageDays !== null && ageDays < 30) {
+      score = Math.min(score, 30);
+    }
+
+    if (
+      ageDays !== null &&
+      ageDays < 180 &&
+      (
+        containsFromList(registrar, riskyRegistrars) ||
+        containsFromList(nameservers.join(" "), riskyNameservers) ||
+        containsFromList(hosting, riskyHosting) ||
+        containsFromList(registrar + " " + nameservers.join(" ") + " " + hosting, spamhausRiskProviders)
+      )
+    ) {
+      score = Math.min(score, 40);
+      findings.push("Kombination aus junger Domain und auffälliger Infrastruktur.");
     }
 
     score = Math.max(0, Math.min(100, score));
@@ -121,15 +388,29 @@ function App() {
     if (score < 45) status = "Kritisch";
     else if (score < 75) status = "Neutral / prüfen";
 
-    setResult({ domain, score, status, registrar, createdText, ip, hosting, findings });
+    setResult({
+      domain,
+      score,
+      status,
+      registrar,
+      createdText,
+      ageDays,
+      ip,
+      hosting,
+      nameservers,
+      findings
+    });
+
     setLoading(false);
   }
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow p-8">
         <h1 className="text-3xl font-bold mb-2">Domain Risiko Checker</h1>
-        <p className="text-slate-600 mb-6">Prüft Domainalter, Registrar, IP und Hostingdaten.</p>
+        <p className="text-slate-600 mb-6">
+          Prüft Domainalter, Registrar, Nameserver, IP, Hosting und interne Risikolisten.
+        </p>
 
         <div className="flex gap-3">
           <input
@@ -140,20 +421,30 @@ function App() {
             className="flex-1 border rounded-xl px-4 py-3"
           />
 
-          <button onClick={analyzeDomain} className="bg-black text-white px-5 rounded-xl">
+          <button
+            onClick={analyzeDomain}
+            className="bg-black text-white px-5 rounded-xl"
+          >
             {loading ? "Prüfe..." : "Prüfen"}
           </button>
         </div>
 
         {result && (
           <div className="mt-8">
-            <div className="text-2xl font-bold mb-2">Ergebnis: {result.status}</div>
-            <div className="mb-4">Score: {result.score}/100</div>
+            <div className="text-2xl font-bold mb-2">
+              Ergebnis: {result.status}
+            </div>
 
-            <div className="bg-slate-100 rounded-xl p-4 mb-4">
+            <div className="mb-4">
+              Score: {result.score}/100
+            </div>
+
+            <div className="bg-slate-100 rounded-xl p-4 mb-4 space-y-1">
               <div><b>Domain:</b> {result.domain}</div>
               <div><b>Registriert seit:</b> {result.createdText}</div>
+              <div><b>Alter:</b> {result.ageDays !== null ? result.ageDays + " Tage" : "nicht gefunden"}</div>
               <div><b>Registrar:</b> {result.registrar}</div>
+              <div><b>Nameserver:</b> {result.nameservers.length ? result.nameservers.join(", ") : "nicht gefunden"}</div>
               <div><b>IP:</b> {result.ip}</div>
               <div><b>Hosting/Netzwerk:</b> {result.hosting}</div>
             </div>
@@ -161,8 +452,14 @@ function App() {
             <div className="bg-slate-100 rounded-xl p-4">
               <div className="font-semibold mb-2">Hinweise:</div>
               <ul className="list-disc ml-5">
-                {result.findings.map((f, i) => <li key={i}>{f}</li>)}
+                {result.findings.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
               </ul>
+            </div>
+
+            <div className="mt-4 text-sm text-slate-500">
+              Hinweis: Diese Bewertung ist ein Risikosignal, kein Beweis. Junge Domain + auffälliger Provider + fehlende Firmenhistorie ist besonders kritisch.
             </div>
           </div>
         )}
