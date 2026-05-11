@@ -5,10 +5,13 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const riskyRegistrars = [
+    "ultahost"
+    // hier später ergänzen: "namecheap", "hostinger", ...
+  ];
+
   function cleanDomain(value) {
-    return value
-      .toLowerCase()
-      .trim()
+    return value.toLowerCase().trim()
       .replace("https://", "")
       .replace("http://", "")
       .replace("www.", "")
@@ -16,96 +19,100 @@ function App() {
       .split("/")[0]
       .split("?")[0]
       .split("#")[0]
-      .split("@")
-      .pop();
+      .split("@").pop();
   }
 
   function getEventDate(events, action) {
     if (!events) return null;
     const event = events.find(e => e.eventAction === action);
     if (!event || !event.eventDate) return null;
-    return new Date(event.eventDate[0]);
+    return new Date(event.eventDate);
   }
 
   async function analyzeDomain() {
     const domain = cleanDomain(input);
     let score = 100;
     let findings = [];
-
-    if (!domain || !domain.includes(".")) {
-      setResult({ domain, score: 0, status: "Ungültig", findings: ["Bitte gültige Domain eingeben."] });
-      return;
-    }
+    let registrar = "nicht gefunden";
+    let createdText = "nicht gefunden";
+    let ip = "nicht gefunden";
+    let hosting = "nicht gefunden";
 
     setLoading(true);
 
-    const freeMail = [
-      "gmail.com", "outlook.com", "hotmail.com", "yahoo.com",
-      "icloud.com", "gmx.at", "gmx.de", "web.de", "aol.com"
-    ];
-
-    if (freeMail.includes(domain)) {
-      score -= 45;
-      findings.push("Kostenlose Maildomain – für Firmenkommunikation kritisch.");
-    }
-
-    if (domain.includes("career") || domain.includes("careers") || domain.includes("job") || domain.includes("recruit")) {
-      score -= 20;
-      findings.push("Recruiting-Begriffe in der Domain – bei Fake-Karriere-Seiten auffällig.");
-    }
-
-    if ((domain.match(/-/g) || []).length >= 2) {
-      score -= 12;
-      findings.push("Viele Bindestriche in der Domain.");
-    }
-
-    if (/\d/.test(domain)) {
-      score -= 8;
-      findings.push("Zahlen in der Domain.");
-    }
-
-    const riskyEndings = ["xyz", "top", "click", "work", "site", "online"];
-    const tld = domain.split(".").pop();
-
-    if (riskyEndings.includes(tld)) {
-      score -= 15;
-      findings.push("Auffällige Domain-Endung: ." + tld);
+    if (!domain || !domain.includes(".")) {
+      setResult({ domain, score: 0, status: "Ungültig", findings: ["Bitte gültige Domain eingeben."] });
+      setLoading(false);
+      return;
     }
 
     try {
-      const response = await fetch("https://rdap.org/domain/" + domain);
-      const data = await response.json();
+      const rdapRes = await fetch("https://rdap.org/domain/" + domain);
+      const rdap = await rdapRes.json();
 
-      const created = getEventDate(data.events, "registration");
-      const expiry = getEventDate(data.events, "expiration");
-
+      const created = getEventDate(rdap.events, "registration");
       if (created) {
+        createdText = created.toLocaleDateString("de-DE");
         const ageDays = Math.floor((new Date() - created) / (1000 * 60 * 60 * 24));
 
         if (ageDays < 30) {
-          score -= 35;
-          findings.push("Domain ist sehr neu: " + ageDays + " Tage alt.");
+          score -= 70;
+          findings.push("HOCHRISIKANT: Domain ist jünger als 30 Tage (" + ageDays + " Tage).");
         } else if (ageDays < 180) {
-          score -= 25;
-          findings.push("Domain ist jung: ca. " + Math.round(ageDays / 30) + " Monate alt.");
+          score -= 35;
+          findings.push("Riskant: Domain ist jünger als 6 Monate (" + ageDays + " Tage).");
         } else if (ageDays < 365) {
-          score -= 12;
-          findings.push("Domain ist unter 1 Jahr alt.");
+          score -= 20;
+          findings.push("Auffällig: Domain ist jünger als 1 Jahr (" + ageDays + " Tage).");
         } else {
-          findings.push("Domain besteht länger als 1 Jahr.");
+          findings.push("Domainalter unauffällig: " + ageDays + " Tage.");
         }
       }
 
-      if (created && expiry) {
-        const regDays = Math.floor((expiry - created) / (1000 * 60 * 60 * 24));
-        if (regDays <= 370) {
-          score -= 5;
-          findings.push("Domain wurde offenbar nur für ca. 1 Jahr registriert.");
+      if (rdap.entities && rdap.entities.length > 0) {
+        const regEntity = rdap.entities.find(e => e.roles && e.roles.includes("registrar"));
+        if (regEntity && regEntity.vcardArray) {
+          const fn = regEntity.vcardArray[1].find(v => v[0] === "fn");
+          if (fn) registrar = fn[3];
         }
       }
 
+      if (registrar !== "nicht gefunden") {
+        findings.push("Registrar: " + registrar);
+
+        if (riskyRegistrars.some(r => registrar.toLowerCase().includes(r))) {
+          score -= 35;
+          findings.push("Riskanter Registrar laut interner Liste.");
+        }
+      }
     } catch (e) {
-      findings.push("Domainalter konnte online nicht geprüft werden.");
+      findings.push("Domainalter/Registrar konnte nicht geprüft werden.");
+    }
+
+    try {
+      const dnsRes = await fetch("https://dns.google/resolve?name=" + domain + "&type=A");
+      const dns = await dnsRes.json();
+
+      if (dns.Answer && dns.Answer.length > 0) {
+        ip = dns.Answer.find(a => a.type === 1)?.data || "nicht gefunden";
+        findings.push("IP-Adresse: " + ip);
+
+        const ipRes = await fetch("https://rdap.org/ip/" + ip);
+        const ipData = await ipRes.json();
+
+        if (ipData.name) hosting = ipData.name;
+        if (ipData.entities && ipData.entities.length > 0) {
+          const org = ipData.entities[0].vcardArray?.[1]?.find(v => v[0] === "fn");
+          if (org) hosting = org[3];
+        }
+
+        findings.push("Hosting/Netzwerk: " + hosting);
+      } else {
+        score -= 10;
+        findings.push("Keine A-Record-IP gefunden.");
+      }
+    } catch (e) {
+      findings.push("IP/Hosting konnte nicht geprüft werden.");
     }
 
     score = Math.max(0, Math.min(100, score));
@@ -114,19 +121,15 @@ function App() {
     if (score < 45) status = "Kritisch";
     else if (score < 75) status = "Neutral / prüfen";
 
-    if (findings.length === 0) {
-      findings.push("Keine einfachen Auffälligkeiten erkannt.");
-    }
-
-    setResult({ domain, score, status, findings });
+    setResult({ domain, score, status, registrar, createdText, ip, hosting, findings });
     setLoading(false);
   }
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow p-8">
+      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow p-8">
         <h1 className="text-3xl font-bold mb-2">Domain Risiko Checker</h1>
-        <p className="text-slate-600 mb-6">Schnellprüfung für Maildomains, Karriere-Seiten und Transportkontakte.</p>
+        <p className="text-slate-600 mb-6">Prüft Domainalter, Registrar, IP und Hostingdaten.</p>
 
         <div className="flex gap-3">
           <input
@@ -137,30 +140,28 @@ function App() {
             className="flex-1 border rounded-xl px-4 py-3"
           />
 
-          <button
-            onClick={analyzeDomain}
-            className="bg-black text-white px-5 rounded-xl"
-          >
+          <button onClick={analyzeDomain} className="bg-black text-white px-5 rounded-xl">
             {loading ? "Prüfe..." : "Prüfen"}
           </button>
         </div>
 
         {result && (
           <div className="mt-8">
-            <div className="text-xl font-bold mb-2">
-              Ergebnis: {result.status}
-            </div>
+            <div className="text-2xl font-bold mb-2">Ergebnis: {result.status}</div>
+            <div className="mb-4">Score: {result.score}/100</div>
 
-            <div className="mb-4">
-              Score: {result.score}/100
+            <div className="bg-slate-100 rounded-xl p-4 mb-4">
+              <div><b>Domain:</b> {result.domain}</div>
+              <div><b>Registriert seit:</b> {result.createdText}</div>
+              <div><b>Registrar:</b> {result.registrar}</div>
+              <div><b>IP:</b> {result.ip}</div>
+              <div><b>Hosting/Netzwerk:</b> {result.hosting}</div>
             </div>
 
             <div className="bg-slate-100 rounded-xl p-4">
               <div className="font-semibold mb-2">Hinweise:</div>
               <ul className="list-disc ml-5">
-                {result.findings.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
+                {result.findings.map((f, i) => <li key={i}>{f}</li>)}
               </ul>
             </div>
           </div>
