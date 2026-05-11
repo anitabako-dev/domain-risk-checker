@@ -741,17 +741,35 @@ function App() {
         {result && (
           <div className="mt-8">
 
-            <div className="text-2xl font-bold mb-2">
-              Ergebnis:
-              {" "}
-              {result.status}
-            </div>
+           <div
+  className={
+    "text-2xl font-bold mb-2 px-4 py-2 rounded-xl inline-block " +
+    (
+      result.status === "Kritisch"
+        ? "bg-red-100 text-red-700 border border-red-300"
+        : result.status === "Neutral / prüfen"
+        ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+        : "bg-green-100 text-green-700 border border-green-300"
+    )
+  }
+>
+  Ergebnis: {result.status}
+</div>
 
-            <div className="mb-4">
-              Score:
-              {" "}
-              {result.score}/100
-            </div>
+            <div
+  className={
+    "mb-4 font-semibold " +
+    (
+      result.score < 45
+        ? "text-red-700"
+        : result.score < 75
+        ? "text-yellow-700"
+        : "text-green-700"
+    )
+  }
+>
+  Score: {result.score}/100
+</div>
 
             <div className="bg-slate-100 rounded-xl p-4 mb-4 space-y-1">
 
