@@ -291,24 +291,65 @@ function App() {
       return;
     }
 
-    const freeMail = [
-      "gmail.com",
-      "outlook.com",
-      "hotmail.com",
-      "yahoo.com",
-      "icloud.com",
-      "gmx.at",
-      "gmx.de",
-      "web.de"
-    ];
+    const publicMailProviders = [
+  "gmail.com",
+  "googlemail.com",
+  "gmx.de",
+  "gmx.net",
+  "web.de",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "yahoo.com",
+  "yahoo.de",
+  "icloud.com",
+  "me.com",
 
-    if (freeMail.includes(domain)) {
-      score -= 45;
+  "contractor.net",
+  "mail.com",
+  "inbox.com",
+  "proton.me",
+  "protonmail.com",
+  "tutanota.com",
+  "tutamail.com",
+  "aol.com",
+  "libero.it",
+  "alice.it",
+  "virgilio.it",
+  "tiscali.it",
+  "wp.pl",
+  "o2.pl",
+  "onet.pl",
+  "seznam.cz",
+  "centrum.cz",
+  "atlas.sk",
+  "azet.sk",
+  "rambler.ru",
+  "yandex.com",
+  "yandex.ru"
+];
 
-      findings.push(
-        "Kostenlose Maildomain – kritisch für Firmenkommunikation."
-      );
-    }
+const forceManualCheck = {
+  active: false
+};
+
+if (publicMailProviders.includes(domain)) {
+  score = Math.min(score, 70);
+  forceManualCheck.active = true;
+
+  findings.push(
+    "Öffentlicher E-Mail-Dienst. Firmenzugehörigkeit manuell prüfen."
+  );
+}
+
+if (domain.endsWith(".eu")) {
+  score = Math.min(score, 70);
+  forceManualCheck.active = true;
+
+  findings.push(
+    ".eu-Domain. Registrierungsdaten können eingeschränkt verfügbar sein. Manuelle Prüfung empfohlen."
+  );
+}
 
     if (
       domain.includes("career") ||
@@ -670,15 +711,18 @@ function App() {
       Math.min(100, score)
     );
 
-    let status = "Gut";
+   let status = "Gut";
 
-    if (score < 45) {
-      status = "Kritisch";
+if (score < 45) {
+  status = "Kritisch";
 
-    } else if (score < 75) {
-      status =
-        "Neutral / prüfen";
-    }
+} else if (score < 75) {
+  status = "Neutral / prüfen";
+}
+
+if (forceManualCheck.active && status === "Gut") {
+  status = "Neutral / prüfen";
+}
 
     setResult({
       domain,
