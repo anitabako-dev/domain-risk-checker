@@ -9,9 +9,6 @@ function App() {
   if (domainParam) {
     setInput(domainParam);
 
-    setTimeout(() => {
-      analyzeDomain();
-    }, 300);
   }
 }, []);
   const [result, setResult] = useState(null);
