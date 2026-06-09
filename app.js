@@ -2,6 +2,18 @@ const { useState } = React;
 
 function App() {
   const [input, setInput] = useState("");
+  React.useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const domainParam = params.get("domain");
+
+  if (domainParam) {
+    setInput(domainParam);
+
+    setTimeout(() => {
+      analyzeDomain();
+    }, 300);
+  }
+}, []);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
