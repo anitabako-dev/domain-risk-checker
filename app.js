@@ -391,73 +391,14 @@ function App() {
     setLoading(false);
   }
 
-   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow p-6">
-        <h1 className="text-3xl font-bold mb-2">Domain Risiko Checker</h1>
-
-        <p className="text-gray-600 mb-6">
-          Prüft Domainalter, Registrar, Nameserver, IP, Hosting und Abuse-Risiken.
-        </p>
-
-        <div className="flex gap-3 mb-6">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="example.com"
-            className="flex-1 border rounded-xl px-4 py-3"
-          />
-
-          <button
-            onClick={analyzeDomain}
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl disabled:opacity-60"
-          >
-            {loading ? "Prüfe..." : "Prüfen"}
-          </button>
-        </div>
-
-        {result && (
-          <div className="border rounded-xl p-5">
-            <h2 className="text-2xl font-semibold mb-4">
-              Ergebnis: {result.status}
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-              <p><strong>Score:</strong> {result.score}/100</p>
-              <p><strong>Domain:</strong> {result.domain}</p>
-              <p><strong>Registriert seit:</strong> {result.createdText}</p>
-              <p>
-                <strong>Alter:</strong>{" "}
-                {result.ageDays !== null ? result.ageDays + " Tage" : "nicht gefunden"}
-              </p>
-              <p><strong>Registrar:</strong> {result.registrar}</p>
-              <p>
-                <strong>Nameserver:</strong>{" "}
-                {result.nameservers.length
-                  ? result.nameservers.join(", ")
-                  : "nicht gefunden"}
-              </p>
-              <p><strong>IP:</strong> {result.ipText}</p>
-              <p><strong>Hosting:</strong> {result.hosting}</p>
-            </div>
-
-            <h3 className="text-xl font-semibold mb-2">Hinweise:</h3>
-
-            <ul className="list-disc pl-6 space-y-1">
-              {result.findings.map((f, i) => (
-                <li key={i}>{f}</li>
-              ))}
-            </ul>
-
-            <p className="text-sm text-gray-500 mt-5">
-              Hinweis: Diese Bewertung ist nur ein Risikosignal und kein Beweis.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+    return React.createElement(
+    "div",
+    { className: "p-6" },
+    React.createElement("h1", { className: "text-3xl font-bold" }, "Domain Risiko Checker"),
+    React.createElement("p", null, "React läuft jetzt.")
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  React.createElement(App)
+);
