@@ -1,4 +1,3 @@
-/** @jsxRuntime classic */
 const { useState } = React;
 
 function App() {
