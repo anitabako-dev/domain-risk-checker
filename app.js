@@ -1,4 +1,4 @@
-alert("app.js wird geladen");
+alert("app.js läuft");
 const { useState } = React;
 
 function App() {
