@@ -390,7 +390,7 @@ function App() {
     setLoading(false);
   }
 
-  return (
+   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow p-6">
         <h1 className="text-3xl font-bold mb-2">Domain Risiko Checker</h1>
@@ -402,7 +402,7 @@ function App() {
         <div className="flex gap-3 mb-6">
           <input
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="example.com"
             className="flex-1 border rounded-xl px-4 py-3"
           />
@@ -428,9 +428,7 @@ function App() {
               <p><strong>Registriert seit:</strong> {result.createdText}</p>
               <p>
                 <strong>Alter:</strong>{" "}
-                {result.ageDays !== null
-                  ? result.ageDays + " Tage"
-                  : "nicht gefunden"}
+                {result.ageDays !== null ? result.ageDays + " Tage" : "nicht gefunden"}
               </p>
               <p><strong>Registrar:</strong> {result.registrar}</p>
               <p>
